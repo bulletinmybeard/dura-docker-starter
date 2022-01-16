@@ -37,15 +37,15 @@ RUN apt-get update \
     && apt-get install -qqy --no-install-recommends \
         build-essential \
         curl \
-        wget \
-        checkinstall \
         gcc \
         git \
         libssl-dev \
         pkg-config \
         make \
+        wget \
         nodejs \
-        ca-certificates \
+        npm \
+        vim \
         zlib1g-dev \
         supervisor \
         fswatch
@@ -62,11 +62,9 @@ RUN cd /usr/local/src \
         zlib \
     && make \
     && make test \
-    && make install
-
-RUN echo "[Dockerfile] Export OpenSSL environment variables"
-RUN export OPENSSL_DIR=/usr/lib/ssl
-RUN export OPENSSL_CONF=/etc/ssl/openssl.cnf
+    && make install \
+    && export OPENSSL_DIR=${OPENSSL_DIR} \
+    && export OPENSSL_CONF=${OPENSSL_CONF}
 
 RUN echo "[Dockerfile] Install Rust"
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
