@@ -18,22 +18,24 @@ ENV APPLICATION_NAME ${APPLICATION_NAME}
 
 # OpenSSL stuff
 ARG OPENSSL_VERSION="3.0.1"
-ENV OPENSSL_DIR=/usr/lib/ssl
-ENV OPENSSL_CONF=/etc/ssl/openssl.cnf
 
 # Git stuff
-ARG GIT_HOSTER_DOMAIN="github.com"
-ENV GIT_HOSTER_DOMAIN=${GIT_HOSTER_DOMAIN}
+ARG GIT_DOMAIN="github.com"
+ENV GIT_DOMAIN=${GIT_DOMAIN}
 ARG GIT_PERSONAL_ACCESS_TOKEN=""
 ENV GIT_PERSONAL_ACCESS_TOKEN=${GIT_PERSONAL_ACCESS_TOKEN}
+ARG GIT_USERNAME=""
+ENV GIT_USERNAME=${GIT_USERNAME}
+ARG GIT_USER_EMAIL=""
+ENV GIT_USER_EMAIL=${GIT_USER_EMAIL}
 
 # Exit script immediately if any of the commands below fails and returns a non-zero exit status
 RUN set -x
 
 RUN DEBIAN_FRONTEND=noninteractive
 
-RUN echo "[Dockerfile] Install packages"
-RUN apt-get update \
+RUN echo "[Dockerfile] Install packages" \
+    && apt-get update \
     && apt-get install -qqy --no-install-recommends \
         build-essential \
         curl \
@@ -48,10 +50,11 @@ RUN apt-get update \
         vim \
         zlib1g-dev \
         supervisor \
+        ssh-client \
         fswatch
 
-RUN echo "[Dockerfile] Download and compile OpenSSL v${OPENSSL_VERSION}"
-RUN cd /usr/local/src \
+RUN echo "[Dockerfile] Download and compile OpenSSL v${OPENSSL_VERSION}" \
+    && cd /usr/local/src \
     && wget https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz --no-check-certificate \
     && tar -xf openssl-${OPENSSL_VERSION}.tar.gz \
     && cd openssl-${OPENSSL_VERSION} \
@@ -62,36 +65,38 @@ RUN cd /usr/local/src \
         zlib \
     && make \
     && make test \
-    && make install \
-    && export OPENSSL_DIR=${OPENSSL_DIR} \
-    && export OPENSSL_CONF=${OPENSSL_CONF}
+    && make install
 
-RUN echo "[Dockerfile] Install Rust"
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+RUN echo "[Dockerfile] Export OpenSSL environment variables" \
+    && export OPENSSL_DIR=/usr/lib/ssl \
+    && export OPENSSL_CONF=/etc/ssl/openssl.cnf
 
-RUN echo "[Dockerfile] Clone Dura repository and install Dura"
-RUN cd /usr/local/src \
+RUN echo "[Dockerfile] Install Rust" \
+    && curl https://sh.rustup.rs -sSf | sh -s -- -y
+
+RUN echo "[Dockerfile] Git clone and install Dura" \
+    && cd /usr/local/src \
     && git clone https://github.com/tkellogg/dura.git \
     && cd dura \
     && /root/.cargo/bin/cargo install --path .
 
-RUN echo "[Dockerfile] Copy script and config files to container"
+RUN echo "[Dockerfile] Copy files to container"
 ADD container/supervisor/programs.conf /etc/supervisor/conf.d/programs.conf
 ADD container/supervisor/default.conf /etc/supervisor/supervisord.conf
 ADD container/scripts/watcher.js /usr/local/watcher.js
 
-RUN echo "[Dockerfile] Create directory: ${CONTAINER_MOUNT_PATH}"
-RUN mkdir -p ${CONTAINER_MOUNT_PATH}
+RUN echo "[Dockerfile] Create directory: ${CONTAINER_MOUNT_PATH}" \
+    && mkdir -p ${CONTAINER_MOUNT_PATH}
 
-RUN echo "[Dockerfile] Cleaning up"
-RUN apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+#RUN echo "[Dockerfile] Cleaning up"
+#RUN apt-get clean \
+#    && rm -rf /var/lib/apt/lists/*
 
 RUN echo "[Dockerfile] Copy config files and bash scripts to container"
 ADD container/scripts/*.sh /usr/local
 
-RUN echo "[Dockerfile] Make bash scripts executable"
-RUN chmod +x /usr/local/*.sh
+RUN echo "[Dockerfile] Make bash scripts executable" \
+    && chmod +x /usr/local/*.sh
 
 ENTRYPOINT "/usr/local/entrypoint.sh"
 
