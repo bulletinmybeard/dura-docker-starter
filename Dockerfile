@@ -2,14 +2,11 @@ FROM debian:bullseye
 
 MAINTAINER "Robin Schulz <hello@rschu.me>"
 
-ARG HOST_VOLUME_PATH="/Users/rschulz/www/private-projects/git-repos"
+ARG HOST_VOLUME_PATH=""
 ENV HOST_VOLUME_PATH=${HOST_VOLUME_PATH}
 
 ARG CONTAINER_MOUNT_PATH="/usr/local/src/git-repos"
 ENV CONTAINER_MOUNT_PATH=${CONTAINER_MOUNT_PATH}
-
-ARG FSWATCH_GREP_REGEX="(\/Users\/rschulz\/www\/private-projects\/git-repos\/[-\w]+\/.git)\s"
-ENV FSWATCH_GREP_REGEX=${FSWATCH_GREP_REGEX}
 
 # Application name
 ARG APPLICATION_NAME="dura-docker-starter"
@@ -65,9 +62,7 @@ RUN echo "[Dockerfile] Download and compile OpenSSL v${OPENSSL_VERSION}" \
         zlib \
     && make \
     && make test \
-    && make install
-
-RUN echo "[Dockerfile] Export OpenSSL environment variables" \
+    && make install \
     && export OPENSSL_DIR=/usr/lib/ssl \
     && export OPENSSL_CONF=/etc/ssl/openssl.cnf
 
@@ -88,9 +83,9 @@ ADD container/scripts/watcher.js /usr/local/watcher.js
 RUN echo "[Dockerfile] Create directory: ${CONTAINER_MOUNT_PATH}" \
     && mkdir -p ${CONTAINER_MOUNT_PATH}
 
-#RUN echo "[Dockerfile] Cleaning up"
-#RUN apt-get clean \
-#    && rm -rf /var/lib/apt/lists/*
+RUN echo "[Dockerfile] Cleaning up"
+RUN apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN echo "[Dockerfile] Copy config files and bash scripts to container"
 ADD container/scripts/*.sh /usr/local
