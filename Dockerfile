@@ -2,10 +2,13 @@ FROM debian:bullseye
 
 MAINTAINER "Robin Schulz <hello@rschu.me>"
 
+# Avoiding the behavior of WORKDIR by defining a variable at build-time
+ARG WORKING_DIR="/usr/local/src"
+
 ARG HOST_VOLUME_PATH=""
 ENV HOST_VOLUME_PATH=${HOST_VOLUME_PATH}
 
-ARG CONTAINER_MOUNT_PATH="/usr/local/src/git-repos"
+ARG CONTAINER_MOUNT_PATH="${WORKING_DIR}/git-repos"
 ENV CONTAINER_MOUNT_PATH=${CONTAINER_MOUNT_PATH}
 
 # Application name
@@ -14,6 +17,8 @@ ENV APPLICATION_NAME ${APPLICATION_NAME}
 
 # OpenSSL stuff
 ARG OPENSSL_VERSION="3.0.1"
+ARG OPENSSL_DIRECTORY="/usr/local/ssl"
+ARG OPENSSL_CONF_PATH="/etc/ssl/openssl.cnf"
 
 # Git stuff
 ARG GIT_DOMAIN="github.com"
@@ -51,7 +56,7 @@ RUN echo "[Dockerfile] Install packages" \
         fswatch
 
 RUN echo "[Dockerfile] Download and compile OpenSSL v${OPENSSL_VERSION}" \
-    && cd /usr/local/src \
+    && cd ${WORKING_DIR} \
     && wget https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz --no-check-certificate \
     && tar -xf openssl-${OPENSSL_VERSION}.tar.gz \
     && cd openssl-${OPENSSL_VERSION} \
@@ -66,11 +71,14 @@ RUN echo "[Dockerfile] Download and compile OpenSSL v${OPENSSL_VERSION}" \
     && export OPENSSL_DIR=/usr/lib/ssl \
     && export OPENSSL_CONF=/etc/ssl/openssl.cnf
 
+# Depending on your resources and container limits,
+# this step can take forever!
 RUN echo "[Dockerfile] Install Rust" \
+    && cd ${WORKING_DIR} \
     && curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 RUN echo "[Dockerfile] Git clone and install Dura" \
-    && cd /usr/local/src \
+    && cd ${WORKING_DIR} \
     && git clone https://github.com/tkellogg/dura.git \
     && cd dura \
     && /root/.cargo/bin/cargo install --path .
@@ -85,7 +93,11 @@ RUN echo "[Dockerfile] Create directory: ${CONTAINER_MOUNT_PATH}" \
 
 RUN echo "[Dockerfile] Cleaning up"
 RUN apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf \
+      /var/lib/apt/lists/* \
+      ${WORKING_DIR}/dura \
+      ${WORKING_DIR}/openssl-${OPENSSL_VERSION}.tar.gz \
+      ${WORKING_DIR}/openssl-${OPENSSL_VERSION}
 
 RUN echo "[Dockerfile] Copy config files and bash scripts to container"
 ADD container/scripts/*.sh /usr/local
