@@ -45,6 +45,7 @@ RUN echo "[Dockerfile] Install packages" \
         pkg-config \
         make \
         wget \
+        htop \
         nodejs \
         npm \
         vim \
