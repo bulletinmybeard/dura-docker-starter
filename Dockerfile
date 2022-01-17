@@ -1,4 +1,3 @@
-# OpenResty Docker image with NGINX + LUA + Debian Bullseye
 FROM debian:bullseye
 
 MAINTAINER "Robin Schulz <hello@rschu.me>"
