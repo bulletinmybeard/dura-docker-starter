@@ -10,7 +10,7 @@ KNOWN_HOSTS_FILE="${HOME}/.ssh/known_hosts"
 echo "[Entrypoint] ${APPLICATION_NAME}"
 
 echo "[Entrypoint] Create GIT config"
-cat << EOF > /root/.gitconfig
+cat << EOF > "${HOME}"/.gitconfig
 [url "https://${GIT_PERSONAL_ACCESS_TOKEN}@${GIT_DOMAIN}"]
   insteadOf = git://github
 [user]

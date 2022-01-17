@@ -81,7 +81,7 @@ RUN echo "[Dockerfile] Git clone and install Dura" \
     && cd ${WORKING_DIR} \
     && git clone https://github.com/tkellogg/dura.git \
     && cd dura \
-    && /root/.cargo/bin/cargo install --path .
+    && ${HOME}/.cargo/bin/cargo install --path .
 
 RUN echo "[Dockerfile] Copy files to container"
 ADD container/supervisor/programs.conf /etc/supervisor/conf.d/programs.conf
